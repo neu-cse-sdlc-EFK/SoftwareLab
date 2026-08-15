@@ -33,5 +33,5 @@ CREATE TABLE IF NOT EXISTS admin (
     email VARCHAR(255) NOT NULL UNIQUE,
     password TEXT NOT NULL
 )
-
 kanok vai 
+emam vai
