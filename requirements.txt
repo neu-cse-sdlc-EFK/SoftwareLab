@@ -1,0 +1,6 @@
+winget install --id GoLang.Go
+go mod init SoftwareLab
+go get github.com/lib/pq
+go get github.com/joho/godotenv
+go mod tidy
+go run main.go
