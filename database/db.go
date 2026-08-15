@@ -30,8 +30,21 @@ func Connect() (*sql.DB, error) {
 		db.Close()
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
-
 	fmt.Println("Connected to Neon PostgreSQL")
+
+	schema, err := os.ReadFile("database/schema.sql")
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to read schema.sql: %w", err)
+	}
+
+	_, err = db.Exec(string(schema))
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to execute schema.sql: %w", err)
+	}
+
+	fmt.Println("Database schema initialized")
 
 	return db, nil
 }
