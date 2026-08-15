@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS cr(
     batch INT NOT NULL,
     PRIMARY KEY(batch),
     FOREIGN KEY(id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE
-)
+);
 
 CREATE TABLE IF NOT EXISTS teachers (
     name VARCHAR(255) NOT NULL,
@@ -26,10 +26,10 @@ CREATE TABLE IF NOT EXISTS teachers (
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'abroad')),
     chairman BOOLEAN,
     PRIMARY KEY (id)
-)
+);
 
 CREATE TABLE IF NOT EXISTS admin (
     id CHAR(6) NOT NULL, 
     email VARCHAR(255) NOT NULL UNIQUE,
     password TEXT NOT NULL
-)
+);

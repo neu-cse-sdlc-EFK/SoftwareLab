@@ -1,6 +1,8 @@
 winget install --id GoLang.Go
 go get github.com/lib/pq
 go get github.com/joho/godotenv
+go get golang.org/x/crypto/bcrypt
+go get github.com/gorilla/sessions
 go mod tidy
 go mod download
 go run main.go
