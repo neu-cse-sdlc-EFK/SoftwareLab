@@ -8,12 +8,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AddStudentResponse struct {
+type AddResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
-func respondJSON(w http.ResponseWriter, statusCode int, response AddStudentResponse) {
+func respondJSON(w http.ResponseWriter, statusCode int, response AddResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(response)
@@ -21,7 +21,7 @@ func respondJSON(w http.ResponseWriter, statusCode int, response AddStudentRespo
 
 func AddStudent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		respondJSON(w, http.StatusMethodNotAllowed, AddStudentResponse{
+		respondJSON(w, http.StatusMethodNotAllowed, AddResponse{
 			Success: false,
 			Message: "Method not allowed",
 		})
@@ -42,7 +42,7 @@ func AddStudent(w http.ResponseWriter, r *http.Request) {
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, AddStudentResponse{
+		respondJSON(w, http.StatusInternalServerError, AddResponse{
 			Success: false,
 			Message: "Failed to hash password",
 		})
@@ -66,14 +66,68 @@ func AddStudent(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, AddStudentResponse{
+		respondJSON(w, http.StatusInternalServerError, AddResponse{
 			Success: false,
 			Message: "Failed to add student",
 		})
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, AddStudentResponse{
+	respondJSON(w, http.StatusCreated, AddResponse{
+		Success: true,
+		Message: "Student added successfully",
+	})
+}
+
+func AddTeacher(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondJSON(w, http.StatusMethodNotAllowed, AddResponse{
+			Success: false,
+			Message: "Method not allowed",
+		})
+		return
+	}
+
+	name := r.FormValue("name")
+	id := r.FormValue("id")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	chairman := r.FormValue("chairman")
+
+	hashedPassword, err := bcrypt.GenerateFromPassword(
+		[]byte(password),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, AddResponse{
+			Success: false,
+			Message: "Failed to hash password",
+		})
+		return
+	}
+
+	_, err = database.DB.Exec(`
+		INSERT INTO teachers
+			(name, id, email, password,chairman)
+		VALUES
+			($1, $2, $3, $4, $5)
+	`,
+		name,
+		id,
+		email,
+		string(hashedPassword),
+		chairman,
+	)
+
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, AddResponse{
+			Success: false,
+			Message: "Failed to add student",
+		})
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, AddResponse{
 		Success: true,
 		Message: "Student added successfully",
 	})

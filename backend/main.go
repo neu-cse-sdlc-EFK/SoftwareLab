@@ -19,7 +19,7 @@ func main() {
 	}
 
 	http.HandleFunc("/addstudent", handlers.AddStudent)
-	// http.HandleFunc("/login", handlers.LoginHandler)
+	http.HandleFunc("/addstudent", handlers.AddTeacher)
 	http.HandleFunc("/profile", handlers.ProfileHandler)
 	http.HandleFunc("/logout", handlers.LogoutHandler)
 
