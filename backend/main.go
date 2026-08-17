@@ -18,7 +18,8 @@ func main() {
 		return
 	}
 
-	http.HandleFunc("/login", handlers.LoginHandler)
+	http.HandleFunc("/addstudent", handlers.AddStudent)
+	// http.HandleFunc("/login", handlers.LoginHandler)
 	http.HandleFunc("/profile", handlers.ProfileHandler)
 	http.HandleFunc("/logout", handlers.LogoutHandler)
 

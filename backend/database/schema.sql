@@ -33,3 +33,6 @@ CREATE TABLE IF NOT EXISTS admin (
     email VARCHAR(255) NOT NULL UNIQUE,
     password TEXT NOT NULL
 );
+
+INSERT INTO admin (id, email, password)
+VALUES ('AD0001', 'admin@netrokona-uni.edu.bd', '$2a$10$5RzQaCkJoWEYTDJG0qOc7uESaIsOcd/uKGqCe0uNUsLTUYJ73DSHW');
