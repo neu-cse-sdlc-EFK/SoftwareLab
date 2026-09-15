@@ -29,10 +29,18 @@ CREATE TABLE IF NOT EXISTS teachers (
 );
 
 CREATE TABLE IF NOT EXISTS admin (
-    id CHAR(6) NOT NULL, 
+    id CHAR(6) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    PRIMARY KEY (id)
 );
 
 INSERT INTO admin (id, email, password)
-VALUES ('AD0001', 'admin@netrokona-uni.edu.bd', '$2a$10$5RzQaCkJoWEYTDJG0qOc7uESaIsOcd/uKGqCe0uNUsLTUYJ73DSHW');
+VALUES (
+    'AD0001',
+    'admin@netrokona-uni.edu.bd',
+    '$2a$10$5RzQaCkJoWEYTDJG0qOc7uESaIsOcd/uKGqCe0uNUsLTUYJ73DSHW'
+)
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    password = EXCLUDED.password;

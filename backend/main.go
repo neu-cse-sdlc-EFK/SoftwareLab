@@ -12,20 +12,26 @@ import (
 func main() {
 
 	err := database.Connect()
-
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	http.HandleFunc("/addstudent", handlers.AddStudent)
-	http.HandleFunc("/addstudent", handlers.AddTeacher)
-	http.HandleFunc("/profile", handlers.ProfileHandler)
-	http.HandleFunc("/logout", handlers.LogoutHandler)
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/login", handlers.LoginHandler)
+	mux.HandleFunc("/logout", handlers.LogoutHandler)
+	mux.HandleFunc("/profile", handlers.ProfileHandler)
+
+	// admin-only routes
+	mux.HandleFunc("/addstudent", handlers.RequireRole("admin")(handlers.AddStudent))
+	mux.HandleFunc("/addteacher", handlers.RequireRole("admin")(handlers.AddTeacher))
+
+	handler := handlers.CORSMiddleware(mux)
 
 	fmt.Println("Server running on http://localhost:8080")
 
 	log.Fatal(
-		http.ListenAndServe(":8080", nil),
+		http.ListenAndServe(":8080", handler),
 	)
 }
