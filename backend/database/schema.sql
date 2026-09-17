@@ -36,3 +36,23 @@ CREATE TABLE IF NOT EXISTS admin (
 
 INSERT INTO admin (id, email, password)
 VALUES ('AD0001', 'admin@netrokona-uni.edu.bd', '$2a$10$5RzQaCkJoWEYTDJG0qOc7uESaIsOcd/uKGqCe0uNUsLTUYJ73DSHW');
+
+
+CREATE TABLE IF NOT EXISTS courses (
+    id VARCHAR(20) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    credit NUMERIC(3,2) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+
+CREATE TABLE IF NOT EXISTS classrooms (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    batch INT NOT NULL,
+    teacher_id CHAR(6),
+    FOREIGN KEY (teacher_id)
+        REFERENCES teachers(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+);
