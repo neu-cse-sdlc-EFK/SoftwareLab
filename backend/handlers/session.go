@@ -1,31 +1,34 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/sessions"
 )
 
-var Store *sessions.CookieStore
+var store *sessions.CookieStore
 
-const SessionName = "session"
-
-func InitSessionStore() error {
+func init() {
 	secret := os.Getenv("SESSION_SECRET")
 
+	// Development fallback.
+	// Set SESSION_SECRET in production.
 	if secret == "" {
-		return fmt.Errorf("SESSION_SECRET is not set")
+		secret = "softwarelab-development-secret-change-this"
 	}
 
-	Store = sessions.NewCookieStore(
-		[]byte(secret),
-	)
+	store = sessions.NewCookieStore([]byte(secret))
 
-	return nil
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   60 * 60 * 24 * 30,
+		HttpOnly: true,
+		Secure:   false, // true when using HTTPS
+		SameSite: http.SameSiteLaxMode,
+	}
 }
 
 func GetSession(r *http.Request) (*sessions.Session, error) {
-	return Store.Get(r, SessionName)
+	return store.Get(r, "softwarelab-session")
 }

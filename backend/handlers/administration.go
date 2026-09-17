@@ -11,8 +11,8 @@ import (
 )
 
 type AddResponse struct {
-	Success bool  json:"success"
-	Message string json:"message"
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
 func respondJSON(w http.ResponseWriter, statusCode int, response AddResponse) {
