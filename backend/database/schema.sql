@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS teachers (
 CREATE TABLE IF NOT EXISTS admin (
     id CHAR(6) NOT NULL, 
     email VARCHAR(255) NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    PRIMARY KEY(id)
 );
 
 INSERT INTO admin (id, email, password)
@@ -55,4 +56,15 @@ CREATE TABLE IF NOT EXISTS classrooms (
         REFERENCES teachers(id)
         ON UPDATE CASCADE
         ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS notice (
+    id SERIAL PRIMARY KEY,
+    time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    classroom_id INT NOT NULL,
+    notice TEXT,
+    FOREIGN KEY (classroom_id)
+        REFERENCES classrooms(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
