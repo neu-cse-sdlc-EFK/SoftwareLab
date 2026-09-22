@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   MoreVertical,
@@ -15,6 +16,7 @@ import {
   FlaskConical,
   Landmark,
   Settings as SettingsIcon,
+  LogOut,
 } from "lucide-react";
 
 const API_BASE = "http://localhost:8080";
@@ -193,9 +195,13 @@ export default function DashboardPage() {
   const [newClassroomBatch, setNewClassroomBatch] = useState("");
   const [newClassroomCourseCode, setNewClassroomCourseCode] = useState("");
   const [creatingClassroom, setCreatingClassroom] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // ----------------------------------------
   // Load current user
@@ -504,6 +510,50 @@ export default function DashboardPage() {
     }
   }
 
+  // ----------------------------------------
+  // Logout
+  // ----------------------------------------
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      const response = await fetch(`${API_BASE}/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        console.error(
+          "Logout failed:",
+          response.status,
+          response.statusText
+        );
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    } finally {
+      setLoggingOut(false);
+      setShowSettingsMenu(false);
+      router.push("/login");
+    }
+  }
+
+  // ----------------------------------------
+  // Close settings dropdown when clicking outside it
+  // ----------------------------------------
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target as Node)
+      ) {
+        setShowSettingsMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const active = classrooms.find((c) => c.id === activeId);
 
   // Group messages so a day divider renders before the first message of each day
@@ -513,36 +563,36 @@ export default function DashboardPage() {
     <div className="h-screen flex flex-col bg-white">
       {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-neutral-200">
-  <div className="flex items-center gap-2 text-red-800 font-semibold text-lg">
-    <img
-      src="/logo.png"
-      alt="Netrokona University"
-      className="w-8 h-8 object-contain"
-    />
-    Department of CSE, Netrokona University
-  </div>
+        <div className="flex items-center gap-2 text-red-800 font-semibold text-lg">
+          <img
+            src="/logo.png"
+            alt="Netrokona University"
+            className="w-8 h-8 object-contain"
+          />
+          Department of CSE, Netrokona University
+        </div>
 
-  <nav className="flex items-center gap-8 text-sm text-neutral-600">
-    <a className="hover:text-neutral-900">Routine</a>
+        <nav className="flex items-center gap-8 text-sm text-neutral-600">
+          <a className="hover:text-neutral-900">Routine</a>
 
-    <a className="hover:text-neutral-900">Schedule</a>
+          <a className="hover:text-neutral-900">Schedule</a>
 
-    <a className="text-red-800 font-medium border-b-2 border-red-800 pb-3 -mb-3">
-      Academic
-    </a>
+          <a className="text-red-800 font-medium border-b-2 border-red-800 pb-3 -mb-3">
+            Academic
+          </a>
 
-    <a className="hover:text-neutral-900">Announcements</a>
-  </nav>
+          <a className="hover:text-neutral-900">Announcements</a>
+        </nav>
 
-  <div className="flex items-center gap-4">
-    <Bell size={18} className="text-neutral-500" />
-    <Avatar
-      name={currentUserName}
-      imageUrl={currentUserAvatar}
-      size={32}
-    />
-  </div>
-</header>
+        <div className="flex items-center gap-4">
+          <Bell size={18} className="text-neutral-500" />
+          <Avatar
+            name={currentUserName}
+            imageUrl={currentUserAvatar}
+            size={32}
+          />
+        </div>
+      </header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
@@ -644,11 +694,27 @@ export default function DashboardPage() {
               </>
             )}
 
-            <div className="border-t border-neutral-200 pt-3">
-              <button className="w-full flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 px-1 py-1">
+            <div className="border-t border-neutral-200 pt-3 relative" ref={settingsRef}>
+              <button
+                onClick={() => setShowSettingsMenu((v) => !v)}
+                className="w-full flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 px-1 py-1"
+              >
                 <SettingsIcon size={15} />
                 Settings
               </button>
+
+              {showSettingsMenu && (
+                <div className="absolute bottom-full left-0 mb-1 w-full bg-white border border-neutral-200 rounded-md shadow-md overflow-hidden z-10">
+                  <button
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className="w-full flex items-center gap-2 text-left text-sm text-red-700 hover:bg-red-50 px-3 py-2 disabled:opacity-50"
+                  >
+                    <LogOut size={14} />
+                    {loggingOut ? "Logging out…" : "Logout"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </aside>
