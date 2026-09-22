@@ -33,7 +33,7 @@ func Connect() error {
 		return fmt.Errorf("database connection failed: %w", err)
 	}
 
-	fmt.Println("Connected to PostgreSQL")
+	fmt.Println("Connected to NEON PostgreSQL server")
 
 	schema, err := os.ReadFile("database/schema.sql")
 	if err != nil {
