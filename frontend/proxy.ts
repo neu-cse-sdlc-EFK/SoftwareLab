@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Routes that require a logged-in session.
 const PROTECTED_PREFIXES = ["/dashboard"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const isProtected = PROTECTED_PREFIXES.some((p) =>
