@@ -22,7 +22,10 @@ func main() {
 	mux.HandleFunc("/login", handlers.LoginHandler)
 	mux.HandleFunc("/logout", handlers.LogoutHandler)
 	mux.HandleFunc("/profile", handlers.ProfileHandler)
-
+	mux.HandleFunc("POST /api/classrooms", handlers.RequireRole("teacher")(handlers.CreateClassroom))
+	mux.HandleFunc("GET /api/classrooms/{id}/files", handlers.GetFiles)
+	mux.HandleFunc("POST /api/classrooms/{id}/files", handlers.PostFile)
+	mux.HandleFunc("GET /api/classrooms/{id}/files/{fileId}/download", handlers.DownloadFile)
 	// admin-only routes
 	mux.HandleFunc("/addstudent", handlers.RequireRole("admin")(handlers.AddStudent))
 	mux.HandleFunc("/addteacher", handlers.RequireRole("admin")(handlers.AddTeacher))
