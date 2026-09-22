@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,10 +12,11 @@ import (
 )
 
 type Classroom struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Batch     int    `json:"batch"`
-	TeacherID string `json:"teacher_id,omitempty"`
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	Batch      int    `json:"batch"`
+	TeacherID  string `json:"teacher_id,omitempty"`
+	CourseCode string `json:"course_code"`
 }
 
 type Message struct {
@@ -34,16 +36,30 @@ type Notice struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// Matches the notices_tag_check constraint in the DB.
+var validNoticeTags = map[string]bool{
+	"urgent":     true,
+	"general":    true,
+	"assignment": true,
+}
+
 // GET /api/classrooms — list classrooms visible to the logged-in user
 func GetClassrooms(w http.ResponseWriter, r *http.Request) {
 	session, err := GetSession(r)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("GetClassrooms: GetSession error:", err)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	id, _ := session.Values["id"].(string)
 	role, _ := session.Values["role"].(string)
+
+	if id == "" || role == "" {
+		log.Println("GetClassrooms: empty session id/role — id:", id, "role:", role)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	var rows *sql.Rows
 
@@ -62,11 +78,13 @@ func GetClassrooms(w http.ResponseWriter, r *http.Request) {
 			WHERE teacher_id = $1
 		`, id)
 	default:
+		log.Println("GetClassrooms: unrecognized role:", role)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	if err != nil {
+		log.Println("GetClassrooms: query error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -77,6 +95,7 @@ func GetClassrooms(w http.ResponseWriter, r *http.Request) {
 		var c Classroom
 		var teacherID sql.NullString
 		if err := rows.Scan(&c.ID, &c.Name, &c.Batch, &teacherID); err != nil {
+			log.Println("GetClassrooms: scan error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -84,18 +103,106 @@ func GetClassrooms(w http.ResponseWriter, r *http.Request) {
 		classrooms = append(classrooms, c)
 	}
 
+	if err := rows.Err(); err != nil {
+		log.Println("GetClassrooms: rows iteration error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(classrooms)
+}
+
+// POST /api/classrooms — teacher only, creates a new classroom.
+// Register this route wrapped in RequireRole("teacher").
+// POST /api/classrooms — teacher only, creates a new classroom.
+// Register this route wrapped in RequireRole("teacher").
+// POST /api/classrooms — teacher only, creates a new classroom.
+// Register this route wrapped in RequireRole("teacher").
+func CreateClassroom(w http.ResponseWriter, r *http.Request) {
+	session, err := GetSession(r)
+	if err != nil {
+		log.Println("CreateClassroom: GetSession error:", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	teacherID, _ := session.Values["id"].(string)
+	role, _ := session.Values["role"].(string)
+
+	if teacherID == "" || role != "teacher" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	name := r.FormValue("name")
+	batchStr := r.FormValue("batch")
+	courseID := r.FormValue("course_code") // this IS courses.id, e.g. "CSE401"
+
+	if name == "" || batchStr == "" || courseID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	batch, err := strconv.Atoi(batchStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// courses.id is the code itself — just confirm it exists.
+	var exists bool
+	err = database.DB.QueryRow(`
+		SELECT EXISTS(SELECT 1 FROM courses WHERE id = $1)
+	`, courseID).Scan(&exists)
+
+	if err != nil {
+		log.Println("CreateClassroom: course lookup error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var newID int
+	err = database.DB.QueryRow(`
+		INSERT INTO classrooms (name, batch, course_id, teacher_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id
+	`, name, batch, courseID, teacherID).Scan(&newID)
+
+	if err != nil {
+		log.Println("CreateClassroom: insert error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(Classroom{
+		ID:         newID,
+		Name:       name,
+		Batch:      batch,
+		CourseCode: courseID,
+		TeacherID:  teacherID,
+	})
 }
 
 // classroomAccess checks the caller is a member of classroomID, returns their role.
 func classroomAccess(r *http.Request, classroomID int) (id, role string, ok bool) {
 	session, err := GetSession(r)
 	if err != nil {
+		log.Println("classroomAccess: GetSession error:", err)
 		return "", "", false
 	}
 	id, _ = session.Values["id"].(string)
 	role, _ = session.Values["role"].(string)
+
+	if id == "" || role == "" {
+		return "", "", false
+	}
 
 	var count int
 	switch role {
@@ -114,7 +221,11 @@ func classroomAccess(r *http.Request, classroomID int) (id, role string, ok bool
 		return id, role, false
 	}
 
-	if err != nil || count == 0 {
+	if err != nil {
+		log.Println("classroomAccess: query error:", err)
+		return id, role, false
+	}
+	if count == 0 {
 		return id, role, false
 	}
 	return id, role, true
@@ -144,6 +255,7 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 		ORDER BY m.created_at ASC
 	`, classroomID)
 	if err != nil {
+		log.Println("GetMessages: query error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -153,10 +265,17 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var m Message
 		if err := rows.Scan(&m.ID, &m.SenderID, &m.SenderRole, &m.Content, &m.CreatedAt, &m.SenderName); err != nil {
+			log.Println("GetMessages: scan error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		messages = append(messages, m)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("GetMessages: rows iteration error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -189,6 +308,7 @@ func PostMessage(w http.ResponseWriter, r *http.Request) {
 	`, classroomID, id, role, content)
 
 	if err != nil {
+		log.Println("PostMessage: insert error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -217,6 +337,7 @@ func GetNotices(w http.ResponseWriter, r *http.Request) {
 		ORDER BY created_at DESC
 	`, classroomID)
 	if err != nil {
+		log.Println("GetNotices: query error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -226,10 +347,17 @@ func GetNotices(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var n Notice
 		if err := rows.Scan(&n.ID, &n.Title, &n.Body, &n.Tag, &n.CreatedAt); err != nil {
+			log.Println("GetNotices: scan error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		notices = append(notices, n)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("GetNotices: rows iteration error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -260,6 +388,10 @@ func PostNotice(w http.ResponseWriter, r *http.Request) {
 	if tag == "" {
 		tag = "general"
 	}
+	if !validNoticeTags[tag] {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	_, err = database.DB.Exec(`
 		INSERT INTO notices (classroom_id, title, body, tag, posted_by)
@@ -267,9 +399,55 @@ func PostNotice(w http.ResponseWriter, r *http.Request) {
 	`, classroomID, title, body, tag, teacherID)
 
 	if err != nil {
+		log.Println("PostNotice: insert error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+// DELETE /api/classrooms/{id}/notices/{notice_id} — teacher who posted it only
+func DeleteNotice(w http.ResponseWriter, r *http.Request) {
+	classroomID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	noticeID, err := strconv.Atoi(r.PathValue("notice_id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	teacherID, role, ok := classroomAccess(r, classroomID)
+	if !ok || role != "teacher" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	result, err := database.DB.Exec(`
+		DELETE FROM notices
+		WHERE id = $1 AND classroom_id = $2 AND posted_by = $3
+	`, noticeID, classroomID, teacherID)
+
+	if err != nil {
+		log.Println("DeleteNotice: delete error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("DeleteNotice: rows affected error:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if rowsAffected == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
