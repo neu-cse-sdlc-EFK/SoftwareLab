@@ -1,21 +1,21 @@
 // app/dashboard/page.tsx
 "use client";
 
+import { useEffect, useState, useRef } from "react";
 import {
-  Bell,
-  ClipboardCheck,
-  FlaskConical,
-  GraduationCap,
-  Landmark,
-  MoreVertical,
-  Paperclip,
-  Plus,
   Search,
+  MoreVertical,
+  Bell,
+  Paperclip,
   Send,
-  Settings as SettingsIcon,
+  ClipboardCheck,
+  Plus,
   Users,
+  GraduationCap,
+  FlaskConical,
+  Landmark,
+  Settings as SettingsIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
 const API_BASE = "http://localhost:8080";
 
@@ -126,7 +126,7 @@ function Avatar({
     <div
       style={dimension}
       className={`rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold ${getAvatarColor(
-        name,
+        name
       )}`}
     >
       {getInitials(name) || "?"}
@@ -242,7 +242,7 @@ export default function DashboardPage() {
         console.error(
           "Failed to load classrooms:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         return;
       }
@@ -290,7 +290,7 @@ export default function DashboardPage() {
         console.error(
           "Failed to create classroom:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         return;
       }
@@ -324,14 +324,14 @@ export default function DashboardPage() {
           `${API_BASE}/api/classrooms/${activeId}/notices`,
           {
             credentials: "include",
-          },
+          }
         );
 
         if (!response.ok) {
           console.error(
             "Failed to load notices:",
             response.status,
-            response.statusText,
+            response.statusText
           );
           setNotices([]);
           return;
@@ -360,14 +360,14 @@ export default function DashboardPage() {
         `${API_BASE}/api/classrooms/${activeId}/files`,
         {
           credentials: "include",
-        },
+        }
       );
 
       if (!response.ok) {
         console.error(
           "Failed to load files:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         setFiles([]);
         return;
@@ -398,14 +398,14 @@ export default function DashboardPage() {
           method: "POST",
           credentials: "include",
           body: formData,
-        },
+        }
       );
 
       if (!response.ok) {
         console.error(
           "Failed to upload file:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         return;
       }
@@ -439,14 +439,14 @@ export default function DashboardPage() {
         `${API_BASE}/api/classrooms/${activeId}/messages`,
         {
           credentials: "include",
-        },
+        }
       );
 
       if (!response.ok) {
         console.error(
           "Failed to load messages:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         setMessages([]);
         return;
@@ -482,14 +482,14 @@ export default function DashboardPage() {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: body.toString(),
-        },
+        }
       );
 
       if (!response.ok) {
         console.error(
           "Failed to send message:",
           response.status,
-          response.statusText,
+          response.statusText
         );
 
         // Put the message back if sending failed
@@ -513,36 +513,36 @@ export default function DashboardPage() {
     <div className="h-screen flex flex-col bg-white">
       {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-neutral-200">
-        <div className="flex items-center gap-2 text-red-800 font-semibold text-lg">
-          <img
-            src="/logo.png"
-            alt="Netrokona University"
-            className="w-8 h-8 object-contain"
-          />
-          Department of CSE, Netrokona University
-        </div>
+  <div className="flex items-center gap-2 text-red-800 font-semibold text-lg">
+    <img
+      src="/logo.png"
+      alt="Netrokona University"
+      className="w-8 h-8 object-contain"
+    />
+    Department of CSE, Netrokona University
+  </div>
 
-        <nav className="flex items-center gap-8 text-sm text-neutral-600">
-          <a className="hover:text-neutral-900">Routine</a>
+  <nav className="flex items-center gap-8 text-sm text-neutral-600">
+    <a className="hover:text-neutral-900">Routine</a>
 
-          <a className="hover:text-neutral-900">Schedule</a>
+    <a className="hover:text-neutral-900">Schedule</a>
 
-          <a className="text-red-800 font-medium border-b-2 border-red-800 pb-3 -mb-3">
-            Academic
-          </a>
+    <a className="text-red-800 font-medium border-b-2 border-red-800 pb-3 -mb-3">
+      Academic
+    </a>
 
-          <a className="hover:text-neutral-900">Announcements</a>
-        </nav>
+    <a className="hover:text-neutral-900">Announcements</a>
+  </nav>
 
-        <div className="flex items-center gap-4">
-          <Bell size={18} className="text-neutral-500" />
-          <Avatar
-            name={currentUserName}
-            imageUrl={currentUserAvatar}
-            size={32}
-          />
-        </div>
-      </header>
+  <div className="flex items-center gap-4">
+    <Bell size={18} className="text-neutral-500" />
+    <Avatar
+      name={currentUserName}
+      imageUrl={currentUserAvatar}
+      size={32}
+    />
+  </div>
+</header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
@@ -556,7 +556,9 @@ export default function DashboardPage() {
 
               <div>
                 <p className="text-sm font-semibold">CSE Portal</p>
-                <p className="text-xs text-neutral-400">Academic Management</p>
+                <p className="text-xs text-neutral-400">
+                  Academic Management
+                </p>
               </div>
             </div>
 
@@ -688,8 +690,7 @@ export default function DashboardPage() {
                   {showDivider && (
                     <div className="flex justify-center mb-4">
                       <span className="text-xs text-neutral-500 bg-neutral-100 rounded-full px-3 py-1">
-                        {formatDayLabel(m.created_at)},{" "}
-                        {formatTime(m.created_at)}
+                        {formatDayLabel(m.created_at)}, {formatTime(m.created_at)}
                       </span>
                     </div>
                   )}
@@ -760,7 +761,10 @@ export default function DashboardPage() {
 
           {/* Message input */}
           <div className="flex items-center gap-3 px-6 py-3 border-t border-neutral-200">
-            <Paperclip size={18} className="text-neutral-400" />
+            <Paperclip
+              size={18}
+              className="text-neutral-400"
+            />
 
             <input
               value={draft}
